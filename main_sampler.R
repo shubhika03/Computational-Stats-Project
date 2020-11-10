@@ -123,13 +123,15 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
 B <- 2000
 acfarray <- numeric(length = B*10)
 acfarray <- matrix(acfarray, nrow=B, ncol=10)
-MMcorrel <- numeric(length=3)
+MMcorrel <- numeric(length=3*10)
+MMcorrel <- matrix(MMcorrel, nrow=3, ncol=10)
 mu_b <- numeric(length = B)
-j = 1
-pb <- progress_bar$new(
-  format = "  downloading [:bar] :percent eta: :eta",
-  total = B, clear = TRUE, width= 60)
+j <- 1
+
 for(l in c(5,10,20)){
+  pb <- progress_bar$new(
+    format = "  downloading [:bar] :percent eta: :eta",
+    total = B, clear = FALSE, width= 60)
   for(i in 1:B){
     x <- reservoirMCMC(L=l)
     samples <- length(x)
@@ -138,7 +140,8 @@ for(l in c(5,10,20)){
     acfarray[i, ] <- temp$acf[,,1]
     pb$tick()
   }
-  MMcorrel[j] <- colMeans(acfarray)
+  print(colMeans(acfarray))
+  MMcorrel[j,] <- colMeans(acfarray)
   j <- j + 1
 }
 
