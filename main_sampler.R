@@ -1,4 +1,10 @@
 
+f <- function(x, sigma) {
+  if (any(x < 0)) return (0)
+  stopifnot(sigma > 0)
+  return((x / sigma^2) * exp(-x^2 / (2*sigma^2)))
+}
+
 # for different use case different implementation of this function
 # should be done, but the function definition i.e parameters and return
 # value shouldn't change
@@ -26,9 +32,9 @@ mh.sampler <- function(start_val, num_of_samples){
   return(x)
 }
 
-n <- 10 # sample size
-l <- 5
-m <- 100 # number of iteration
+n <- 10000 # sample size
+l <- 200
+m <- 1000 # number of iteration
 
 # matrix to store reservoir at each iteration
 R.m <- matrix(nrow = m, ncol = n)
@@ -102,3 +108,13 @@ for(i in 2:m){
 
 print("Final sample:")
 print(R.m[m,])
+
+y <- R.m[m,]
+a <- ppoints(100)
+sigma <- 4
+QR <- sigma * sqrt(-2 * log(1 - a)) #quantiles of Rayleigh
+Q <- quantile(y, a)
+qqplot(QR, Q, main="",
+       xlab="Rayleigh Quantiles", ylab="Sample Quantiles")
+hist(y, breaks="scott", main="", xlab="", freq=FALSE)
+lines(QR, f(QR, 4))
