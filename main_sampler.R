@@ -2,103 +2,146 @@
 # for different use case different implementation of this function
 # should be done, but the function definition i.e parameters and return
 # value shouldn't change
-mh.sampler <- function(start_val, num_of_samples){
-  # start_val - first sample of the chain
-  # num_of_samples - number of samples to generate
-  
-  m <- num_of_samples
-  sigma <- 4
-  x <- numeric(m)
-  
-  # chain will start from the input start value
-  x[1] <- start_val
 
-  u <- runif(m)
-  for (i in 2:m) {
-    xt <- x[i-1]
-    y <- rchisq(1, df = xt)
-    num <- f(y, sigma) * dchisq(xt, df = y)
-    den <- f(xt, sigma) * dchisq(y, df = xt)
-    if (u[i] <= num/den) x[i] <- y else {
-      x[i] <- xt
+pdf <- function(x){
+  return(0.5*dnorm(x, mean=-1, sd=1) + 0.5*dnorm(x, mean=0, sd=0.5))
+}
+slice_sampler <- function(start_val, samples){
+  x0 <- start_val  # Average of the modes of the individual distribution
+  w <- 1
+  x <- numeric(samples)
+  for(i in 1:samples){ 
+    u <- runif(1, 0, pdf(x0))
+    u_prime <- runif(1, 0, 1 )
+    xmin <- x0 - u_prime*w
+    xmax <- xmin + w
+    while(u < pdf(xmin)){
+      xmin <- xmin - w
+    }
+    while(u < pdf(xmax)){
+      xmax <- xmax + w
+    }
+    while(TRUE){
+      u_prime <- runif(1,0,1)
+      x_new <- xmin + u_prime*(xmax - xmin)
+      if(u < pdf(x_new)){
+        x0 <- x_new
+        x[i] <- x0
+        break
+      }
+      if(x_new < x0){
+        xmin <- x_new
+      }
+      else{
+        xmax <- x_new
+      }
     }
   }
   return(x)
 }
 
-n <- 10 # sample size
-l <- 5
-m <- 100 # number of iteration
-
-# matrix to store reservoir at each iteration
-R.m <- matrix(nrow = m, ncol = n)
-
-# matrix to store counting at each iteration
-N.x.m <- matrix(nrow = m, ncol = n)
-
-# step 1
-R.m[1, 1] = rchisq(1, df=1) # start value preferably mean of distribution
-# print(R.m)
-
-
-R.m[1,] <- mh.sampler(R.m[1, 1], n)
-N.x.m[1,] <- rep(1, times = n)
-
-# from iteration 2 to m
-for(i in 2:m){
+reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
+  n <- reservoir_size # reservoir size
+  l <- L
+  m <- iterates # number of iteration
+  # matrix to store reservoir at each iteration
+  R.m <- matrix(nrow = m, ncol = n)
+  # samples <- numerics 
+  # matrix to store counting at each iteration
+  N.x.m <- matrix(nrow = m, ncol = n)
   
-  # step 2
-  # generating L more samples from the chain
-  y <- mh.sampler(R.m[i-1, n], l)
-
-  # defining extended extended reservoir and the counting vector
-  R.e <- numeric(n+l-1)
-  N.e <- numeric(n+l-1)
+  # step 1
+  R.m[1, 1] = rchisq(1, df=1) # start value preferably mean of distribution
+  # print(R.m)
   
-  temp <- n+l-1
   
-  R.e[1:n] = R.m[i-1,]
-  R.e[(n+1):(n+l-1)] = y[1:l-1]
-  N.e[1:n] = N.x.m[i-1,]
-  N.e[(n+1):(n+l-1)] = 1
+  R.m[1,] <- slice_sampler(R.m[1, 1], n)
+  N.x.m[1,] <- rep(1, times = n)
   
-  # storing last value of the sample
-  y_l = y[l]
-
-  # step 3
-  # defining initial index vector
-  A <- 1:temp
-  for(j in 1:l){
-    probability <- N.e[A]
-    probability <- probability / sum(probability)
-    remove_idx <- sample(A, size=1, replace=TRUE, prob=probability)
+  # from iteration 2 to m
+  for(i in 2:m){
     
-    # removing chosen index
-    A <- A[A != remove_idx]
-  }
-  
-  # reservoir and counting vector with n-1 elements
-  R.e = R.e[A]
-  N.e = N.e[A]
-  
-  # adding 1 to count for retained values from previous
-  # iteration
-  for(j in 1:(n-1)){
-    if(A[j] <= n){
-      N.e[j] <- N.e[j] + 1
+    # step 2
+    # generating L more samples from the chain
+    y <- slice_sampler(R.m[i-1, n], l)
+    
+    # defining extended extended reservoir and the counting vector
+    R.e <- numeric(n+l-1)
+    N.e <- numeric(n+l-1)
+    
+    temp <- n+l-1
+    
+    R.e[1:n] = R.m[i-1,]
+    R.e[(n+1):(n+l-1)] = y[1:l-1]
+    N.e[1:n] = N.x.m[i-1,]
+    N.e[(n+1):(n+l-1)] = 1
+    
+    # storing last value of the sample
+    y_l = y[l]
+    
+    # step 3
+    # defining initial index vector
+    A <- 1:temp
+    for(j in 1:l){
+      probability <- N.e[A]
+      probability <- probability / sum(probability)
+      remove_idx <- sample(A, size=1, replace=TRUE, prob=probability)
+      # shouldn't we sample without replacement? 
+      # removing chosen index
+      A <- A[A != remove_idx]
     }
+    
+    # reservoir and counting vector with n-1 elements
+    R.e = R.e[A]
+    N.e = N.e[A]
+    # adding 1 to count for retained values from previous
+    # iteration
+    for(j in 1:(n-1)){
+      if(A[j] <= n){
+        N.e[j] <- N.e[j] + 1
+      }
+    }
+    
+    # updating reservoir
+    R.m[i,1:n-1] <- R.e
+    N.x.m[i,1:n-1] <- N.e
+    
+    # adding last value to reservoir
+    R.m[i,n] <- y_l
+    N.x.m[i,n] <- 1
   }
+  # print(R.m)
+  # print(N.x.m)
   
-  # updating reservoir
-  R.m[i,1:n-1] <- R.e
-  N.x.m[i,1:n-1] <- N.e
-  
-  # adding last value to reservoir
-  R.m[i,n] <- y_l
-  N.x.m[i,n] <- 1
+  x <- c(R.m)
 }
-# print(R.m)
-# print(N.x.m)
 
-print("Final sample:")
-print(R.m[m,])
+
+##
+## Monte Carlo Mean of Autocorrelation
+##
+B <- 2000
+acfarray <- numeric(length = B*10)
+acfarray <- matrix(acfarray, nrow=B, ncol=10)
+MMcorrel <- numeric(length=3)
+mu_b <- numeric(length = B)
+j = 1
+pb <- progress_bar$new(
+  format = "  downloading [:bar] :percent eta: :eta",
+  total = B, clear = TRUE, width= 60)
+for(l in c(5,10,20)){
+  for(i in 1:B){
+    x <- reservoirMCMC(L=l)
+    samples <- length(x)
+    
+    temp <- c(acf(x[samples-50:samples], plot=FALSE)[1:10])
+    acfarray[i, ] <- temp$acf[,,1]
+    pb$tick()
+  }
+  MMcorrel[j] <- colMeans(acfarray)
+  j <- j + 1
+}
+
+# Plotting To be done
+
+plot(MMcorrel, type='b')
