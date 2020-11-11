@@ -146,5 +146,20 @@ for(l in c(5,10,20)){
 }
 
 # Plotting To be done
+numlags <- 3
+xrange <- range(1:6)
+yrange <- range(c(MMcorrel))
+plot(xrange,yrange, type='n', ylab = "Autocorrelation", xlab = "Lag")
+colors <- rainbow(numlags)
+linetype <- c(1: numlags)
+plotchar <- seq(18, 18 + numlags, 1)
+for(i in 1:numlags){
+  lines(1:6, MMcorrel[i,1:6], type='b', lwd=1.5, lty=linetype, col=colors[i], pch = plotchar)
+}
+title("Monte Carlo mean of Autocorrelation")
+legend("topright", legend=c(5,10,20), cex=0.8, col=colors, pch=plotchar,
+        lty = linetype, title = "ACF plot")
+# plot(MMcorrel[2,], type = 'b', add = TRUE)
+# plot(MMcorrel[3,], type = 'b', add = TRUE)
 
-plot(MMcorrel, type='b')
+
