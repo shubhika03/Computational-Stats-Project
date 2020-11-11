@@ -1,0 +1,6 @@
+data <- read.csv("/Users/apple/Desktop/Comp Stats Codes/Computational-Stats-Project/HU_edges.csv", header = TRUE)
+el <- as.matrix(data) 
+el[,1] <- as.character(el[,1])
+el[,2] <- as.character(el[,2])
+g <- graph.edgelist(el, directed = FALSE)
+degree_distribution(g)
