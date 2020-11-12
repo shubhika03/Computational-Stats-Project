@@ -63,7 +63,7 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
     
     # step 2
     # generating L more samples from the chain
-    y <- slice_sampler(R.m[i-1, n], l)
+    y <- slice_sampler(R.m[i-1, n], l+1)[2:(l+1)]
     
     # defining extended extended reservoir and the counting vector
     R.e <- numeric(n+l-1)
@@ -72,9 +72,13 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
     temp <- n+l-1
     
     R.e[1:n] = R.m[i-1,]
-    R.e[(n+1):(n+l-1)] = y[1:l-1]
+    if(l > 1){
+      R.e[(n+1):(n+l-1)] = y[1:l-1]
+    }
     N.e[1:n] = N.x.m[i-1,]
-    N.e[(n+1):(n+l-1)] = 1
+    if(l > 1){
+      N.e[(n+1):(n+l-1)] = 1
+    }
     
     # storing last value of the sample
     y_l = y[l]
