@@ -4,7 +4,7 @@
 # value shouldn't change
 
 pdf <- function(x){
-  return(0.5*dnorm(x, mean=-1, sd=1) + 0.5*dnorm(x, mean=0, sd=0.5))
+  return(0.5*dnorm(x, mean=-1, sd=1) + 0.5*dnorm(x, mean=3, sd=0.5))
 }
 slice_sampler <- function(start_val, samples){
   x0 <- start_val  # Average of the modes of the individual distribution
@@ -63,7 +63,7 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
     
     # step 2
     # generating L more samples from the chain
-    y <- slice_sampler(R.m[i-1, n], l)
+    y <- slice_sampler(R.m[i-1, n], l+1)[2:(l+1)]
     
     # defining extended extended reservoir and the counting vector
     R.e <- numeric(n+l-1)
@@ -72,9 +72,13 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
     temp <- n+l-1
     
     R.e[1:n] = R.m[i-1,]
-    R.e[(n+1):(n+l-1)] = y[1:l-1]
+    if(l > 1){
+      R.e[(n+1):(n+l-1)] = y[1:l-1]
+    }
     N.e[1:n] = N.x.m[i-1,]
-    N.e[(n+1):(n+l-1)] = 1
+    if(l > 1){
+      N.e[(n+1):(n+l-1)] = 1
+    }
     
     # storing last value of the sample
     y_l = y[l]
@@ -120,15 +124,30 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
 ##
 ## Monte Carlo Mean of Autocorrelation
 ##
-B <- 2000
+B <- 10 #Change this to 2000
+
+num_L <- 5
 acfarray <- numeric(length = B*10)
 acfarray <- matrix(acfarray, nrow=B, ncol=10)
-MMcorrel <- numeric(length=3*10)
-MMcorrel <- matrix(MMcorrel, nrow=3, ncol=10)
+MMcorrel <- numeric(length=num_L*10)
+MMcorrel <- matrix(MMcorrel, nrow=num_L, ncol=10)
 mu_b <- numeric(length = B)
-j <- 1
 
-for(l in c(5,10,20)){
+# Traditional Slice Sampler
+pb <- progress_bar$new(
+  format = "  downloading [:bar] :percent eta: :eta",
+  total = B, clear = FALSE, width= 60)
+for(i in 1:B){
+  x <- slice_sampler(1, 50*2000)
+  samples <- length(x)
+  temp <- c(acf(x[samples-50:samples], plot=FALSE)[1:10])
+  acfarray[i, ] <- temp$acf[,,1]
+  pb$tick()
+}
+MMcorrel[1, ] <- colMeans(acfarray)
+j <- 2
+# Reservoir Sampling
+for(l in c(1, 5,10,20)){
   pb <- progress_bar$new(
     format = "  downloading [:bar] :percent eta: :eta",
     total = B, clear = FALSE, width= 60)
@@ -146,20 +165,20 @@ for(l in c(5,10,20)){
 }
 
 # Plotting To be done
-numlags <- 3
-xrange <- range(1:6)
+numlags <- 5
+xrange <- range(1:10)
 yrange <- range(c(MMcorrel))
 plot(xrange,yrange, type='n', ylab = "Autocorrelation", xlab = "Lag")
 colors <- rainbow(numlags)
 linetype <- c(1: numlags)
 plotchar <- seq(18, 18 + numlags, 1)
+
 for(i in 1:numlags){
-  lines(1:6, MMcorrel[i,1:6], type='b', lwd=1.5, lty=linetype, col=colors[i], pch = plotchar)
+  lines(1:10, MMcorrel[i,1:10], type='b', lwd=1.5, lty=linetype, col=colors[i], pch = plotchar)
 }
 title("Monte Carlo mean of Autocorrelation")
-legend("topright", legend=c(5,10,20), cex=0.8, col=colors, pch=plotchar,
-        lty = linetype, title = "ACF plot")
+legend("topright", legend=c("td","l=1","l=5","l=10","l=20"), cex=0.8, col=colors, pch=plotchar,
+       lty = linetype, title = "ACF plot")
 # plot(MMcorrel[2,], type = 'b', add = TRUE)
 # plot(MMcorrel[3,], type = 'b', add = TRUE)
-
 

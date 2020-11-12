@@ -6,7 +6,7 @@ for(i in 1:samples){
     trudist[i] <- rnorm(1, -1, 1)
   }
   else{
-    trudist[i] <- rnorm(1, 0, 0.5)
+    trudist[i] <- rnorm(1, 3, 0.5)
   }
 }
 traditional <- hist(trudist, breaks=100, plot=FALSE)
@@ -50,6 +50,7 @@ slice_sampler <- function(samples){
 
 x <- slice_sampler(samples)
 chain <- x[1001:samples]
+num_samples <- length(chain)
 MCMC <- hist(chain, breaks =100, plot=FALSE )
 c1 <- rgb(173,216,230,max = 255, alpha = 80, names = "lt.blue")
 c2 <- rgb(255,192,203, max = 255, alpha = 80, names = "lt.pink")
@@ -57,3 +58,6 @@ plot(traditional, freq = FALSE, col = c1)
 plot(MCMC, freq = FALSE, col = c2, add = TRUE)
 lines(density(trudist), col='blue')
 lines(density(chain), col='red')
+b1 <- 3
+p1 <- which(chain < b1)
+print(length(p1)/num_samples)
