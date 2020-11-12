@@ -135,7 +135,7 @@ mu_b <- numeric(length = B)
 
 # Traditional Slice Sampler
 pb <- progress_bar$new(
-  format = "  downloading [:bar] :percent eta: :eta",
+  format = "  completed [:bar] :percent eta: :eta",
   total = B, clear = FALSE, width= 60)
 for(i in 1:B){
   x <- slice_sampler(1, 50*2000)

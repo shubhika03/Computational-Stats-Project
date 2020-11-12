@@ -12,7 +12,7 @@ for(i in 1:samples){
 traditional <- hist(trudist, breaks=100, plot=FALSE)
 
 pdf <- function(x){
-  return(0.5*dnorm(x, mean=-1, sd=1) + 0.5*dnorm(x, mean=0, sd=0.5))
+  return(0.5*dnorm(x, mean=-1, sd=1) + 0.5*dnorm(x, mean=3, sd=0.5))
 }
 slice_sampler <- function(samples){
   x0 <- -0.5  # Average of the modes of the individual distribution
@@ -59,5 +59,6 @@ plot(MCMC, freq = FALSE, col = c2, add = TRUE)
 lines(density(trudist), col='blue')
 lines(density(chain), col='red')
 b1 <- 3
-p1 <- which(chain < b1)
+p1 <- which(trudist < b1)
 print(length(p1)/num_samples)
+

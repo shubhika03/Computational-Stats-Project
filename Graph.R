@@ -48,7 +48,7 @@ MHRW <- function(start_node = 3,numsamples=50000){
 reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
   reservoir_size=50
   L=10
-  iterates=2000
+  iterates=100
    n <- reservoir_size # reservoir size
   l <- L
   m <- iterates # number of iteration
@@ -59,7 +59,7 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
   N.x.m <- matrix(nrow = m, ncol = n)
   
   # step 1
-  R.m[1, 1] = rchisq(1, df=1) # start value preferably mean of distribution
+  R.m[1, 1] = 2 # start value preferably mean of distribution
   # print(R.m)
   
   
@@ -72,7 +72,7 @@ reservoirMCMC <- function(reservoir_size=50, L=10, iterates=2000){
     # step 2
     # generating L more samples from the chain
     y <- MHRW(R.m[i-1, n], l+1)[2:(l+1)]
-    
+
     # defining extended extended reservoir and the counting vector
     R.e <- numeric(n+l-1)
     N.e <- numeric(n+l-1)
@@ -140,7 +140,7 @@ prop<- length(p1)/numsamples # Calculating the proportions given in the paper
 hist(degree(g,sample),xlim=range(degree(g, sample)),probability = TRUE, main="Histogram of values of x visited by MH algorithm")
 # lines(xx,target(xx),col="red")
 
-hist(res_samples)
+hist(degree(g, res_samples))
 p1_ <- which(degree(g, res_samples) < q1)
 prop_ <- length(p1_)/numsamples
 print(prop)
